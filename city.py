@@ -1,4 +1,3 @@
-import pprint
 import requests
 from dateutil.parser import parse
 
@@ -38,7 +37,7 @@ def _main():
     weather_forecast = YahooWeatherForecast()
     for i in range(5):
         city_info = CityInfo("Samara", weather_forecast=weather_forecast)
-        city_info.weather_forecast()
+        city_info.weather_forecast() # missing return-statement
 
 
 if __name__ == "__main__":
