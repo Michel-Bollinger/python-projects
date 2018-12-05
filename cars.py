@@ -1,10 +1,18 @@
+"""
+The script that receives the input csv-table with cars 
+and the output list of the objects-cars. Each type of car 
+has its own required attributes and methods. In the case 
+of absence of some required attributes or incorrect data in the table, 
+the row of the table is skipped and the object is not created.
+"""
+
 import csv
 import os.path
 import sys
 
 
 class CarBase:
-    """Базовый класс с общими атрибутами и методом"""
+    """Base class with common attributes and method"""
 
     def __init__(self, brand, photo_file_name, carrying):
         self.brand = brand 
@@ -12,14 +20,14 @@ class CarBase:
         self.carrying = float(carrying)
 
     def get_photo_file_ext(self):
-        """Возвращает расширение фотографии автомобиля"""
+        """Returns the vehicle photo extension"""
         _, ext = os.path.splitext(self.photo_file_name)
         return ext
 
 
 
 class Car(CarBase):
-    """Класс легкого автомобиля"""
+    """Passenger car class"""
     
     def __init__(self, brand, passenger_seats_count, photo_file_name, carrying):
         
@@ -36,7 +44,7 @@ class Car(CarBase):
 
 
 class Truck(CarBase):
-    """Класс грузового автомобиля"""
+    """Truck class"""
 
     def __init__(self, brand, photo_file_name, body_whl, carrying):
         
@@ -56,13 +64,13 @@ class Truck(CarBase):
 
 
     def get_body_volume(self):
-        """Возвращает объем грузовместимой части в кубометрах"""
+        """Returns the volume of the cargo part in cubic meters"""
         return self.body_length * self.body_height * self.body_width
 
 
 
 class SpecMachine(CarBase):
-    """Класс спецтехника"""
+    """Special equipment class"""
 
     def __init__(self, brand, photo_file_name, carrying, extra):
         
@@ -78,7 +86,7 @@ class SpecMachine(CarBase):
 
 
 def get_car_list(csv_filename):
-    """Возвращает из исходной csv-таблицы список объектов-автомобилей"""
+    """Returns from the source csv-table a list of car objects"""
     
     # индексирование в будущем списке, для упрощенного чтения
     indx_car_type = 0
