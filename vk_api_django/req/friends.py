@@ -1,3 +1,10 @@
+"""
+This script is designed to work with VK API methods. 
+The script makes a request to obtain the public data 
+of the selected user's friends. Then, using the date of birth, 
+compiles a sorted list of tuples of the form: (age, number)
+"""
+
 from operator import itemgetter
 import requests
 
@@ -46,5 +53,5 @@ def calc_age(uid):
 
 
 if __name__ == '__main__':
-    res = calc_age('reigning')
+    res = calc_age(input())
     print(res)
