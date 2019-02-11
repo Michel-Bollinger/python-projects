@@ -1,72 +1,105 @@
+
+
 import socket
 import time
 
 
 class ClientError(Exception):
+    """Общий класс исключений клиента"""
+    pass
+
+
+class ClientSocketError(ClientError):
+    """Исключение, выбрасываемое клиентом при сетевой ошибке"""
+    pass
+
+
+class ClientProtocolError(ClientError):
+    """Исключение, выбрасываемое клиентом при ошибке протокола"""
     pass
 
 
 class Client:
-    def __init__(self, ip, port, timeout=None):
-        self.connection = socket.create_connection((ip, port), timeout)
-        self.ip = ip
-        self.port = ip
-        self.timeout = timeout
-
-    @staticmethod
-    def _make_metrics_dict(response):
-        list_of_metrics = response[3:-2].split(b'\n')
-
-        for byte_metric in list_of_metrics:
-            list_of_metrics[list_of_metrics.index(byte_metric)] = byte_metric.decode('utf-8')
-        print(list_of_metrics)
-
-        metrics_dict = {}
-
-        for string_metric in list_of_metrics:
-            metric_list = string_metric.split()
-            print(metric_list)
-            metric_list.reverse()
-            key = metric_list.pop()
-            if not metrics_dict.get(key):
-                metrics_dict[key] = []
-            metric_list.reverse()
-            print(metric_list)
-            for value in metric_list:
-                if metric_list.index(value) % 2 == 1:
-                    pair = (int(value), float(metric_list[metric_list.index(value) - 1]))
-                    metrics_dict[key].append(pair)
-            print(metrics_dict)
-
-        return metrics_dict
-
-    def _receive_data(self):
-        response = bytearray()
-        data = self.connection.recv(1024)
-        response += data
-        return response
-
-    def close_connection(self):
-        self.connection.close()
-
-    def put(self, key, value, timestamp=time.time()):
+    def __init__(self, host, port, timeout=None):
+        # класс инкапсулирует создание соединения
+        self.host = host
+        self.port = port
         try:
-            self.connection.sendall(f'put {key} {float(value)} {int(timestamp)}\n'.encode('utf-8'))
-            response = self._receive_data()
-            if response == b'error\nwrong command\n\n':
-                raise ClientError
-        except (socket.error, socket.timeout):
-            pass
+            self.connection = socket.create_connection((host, port), timeout)
+        except socket.error as err:
+            raise ClientSocketError("error create connection", err)
+
+    def _read(self):
+        """Метод для чтения ответа сервера"""
+        data = b""
+        # накапливаем части строки, пока не встретим "\n\n" в конце команды,
+        # что означает конец сообщения в условленном протоколе обмена данными
+        # между сервером и клиентом
+        while not data.endswith(b"\n\n"):
+            try:
+                data += self.connection.recv(1024)
+            except socket.error as err:
+                raise ClientSocketError("error recv data", err)
+
+        # преобразовываем байтовую строку в обычную
+        decoded_data = data.decode()
+        
+        # разбираем строку на статус ответа и сами данные метрик
+        # разбиваем по первому найденому \n т.к. 
+        # следующие разделители строк - разные метрики
+        status, metrics = decoded_data.split("\n", 1)
+        metrics = metrics.strip()
+
+        # если получили ошибку - бросаем исключение нарушения 
+        # протокола взаимодействия
+        if status == "error":
+            raise ClientProtocolError(payload)
+
+        return metrics
+
+    def put(self, key, value, timestamp=None):
+        # если временная unix-метка не передана,
+        # создаем ее сами
+        timestamp = timestamp or int(time.time())
+
+        # отправляем запрос команды put
+        try:
+            self.connection.sendall(
+                f"put {key} {value} {timestamp}\n".encode()
+            )
+        except socket.error as err:
+            raise ClientSocketError("error send data", err)
+
+        # разбираем ответ
+        self._read()
 
     def get(self, key):
+        # формируем и отправляем запрос команды get
         try:
-            self.connection.sendall(f'get {key}\n'.encode('utf-8'))
-            response = self._receive_data()
-            if response == b'ok\n\n':
-                return {}
-            elif response == b'error\nwrong command\n\n':
-                raise ClientError
-            else:
-                return self._make_metrics_dict(response)
-        except (socket.error, socket.timeout):
-            pass
+            self.connection.sendall(
+                f"get {key}\n".encode()
+            )
+        except socket.error as err:
+            raise ClientSocketError("error send data", err)
+
+        # читаем ответ
+        metrics = self._read()
+
+        data = {}
+        if metrics == "":
+            return data
+
+        # разбираем ответ для команды get
+        for row in metrics.split("\n"):
+            key, value, timestamp = row.split()
+            if key not in data:
+                data[key] = []
+            data[key].append((int(timestamp), float(value)))
+
+        return data
+
+    def close(self):
+        try:
+            self.connection.close()
+        except socket.error as err:
+            raise ClientSocketError("error close connection", err)
