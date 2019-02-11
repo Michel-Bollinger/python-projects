@@ -7,5 +7,5 @@ The format for receiving the metric is "get palm.cpu\n", where the first is the 
 The server can respond as follows: 
 1) "ok\n\n" - to add a metric is a successful execution, and to get it, everything worked out correctly, but there is no such metric on the server
 2) "ok\npalm.cpu 10.5 1501864247\neardrum.cpu 15.3 1501864259\n\n" - when the server gives the necessary metrics and everything worked correctly
-3)" error\nwrong command\n\n "- incorrect request from the client.
+3) "error\nwrong command\n\n "- incorrect request from the client.
 The end of the server message always has two newline characters.
