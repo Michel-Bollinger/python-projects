@@ -68,7 +68,7 @@ def calc_age(uid):
         count = all_ages.count(age)
         age_and_count.append((age, count))
 
-    # сортируем спиоск сначала по возрасту
+    # сортируем список сначала по возрасту
     # а затем по частоте, начиная с наибольшей
     ages_sorted = sorted(age_and_count, key=itemgetter(0))
     ages_sorted = sorted(ages_sorted, key=itemgetter(1), reverse=True)
